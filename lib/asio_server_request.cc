@@ -34,9 +34,9 @@ namespace nghttp2 {
 namespace asio_http2 {
 namespace server {
 
-request::request() : impl_(std::make_unique<request_impl>()) {}
+request::request() : impl_(std::make_unique<request_impl>()) { printf("asio: request::request\n"); }
 
-request::~request() {}
+request::~request() { printf("asio: request::request\n"); }
 
 const header_map &request::header() const { return impl_->header(); }
 
@@ -45,6 +45,7 @@ const std::string &request::method() const { return impl_->method(); }
 const uri_ref &request::uri() const { return impl_->uri(); }
 
 void request::on_data(data_cb cb) const {
+  printf("asio: request::on_data\n");
   return impl_->on_data(std::move(cb));
 }
 
