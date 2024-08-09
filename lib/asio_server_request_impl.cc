@@ -36,7 +36,7 @@ const std::string &request_impl::method() const { return method_; }
 
 const uri_ref &request_impl::uri() const { return uri_; }
 
-uri_ref &request_impl::uri() { return uri_; }
+uri_ref &request_impl::uri() { printf("asio: request_impl::uri\n"); return uri_; }
 
 void request_impl::header(header_map h) { header_ = std::move(h); }
 
@@ -44,11 +44,12 @@ header_map &request_impl::header() { return header_; }
 
 void request_impl::method(std::string arg) { method_ = std::move(arg); }
 
-void request_impl::on_data(data_cb cb) { on_data_cb_ = std::move(cb); }
+void request_impl::on_data(data_cb cb) { printf("asio: request_impl::on_data\n"); on_data_cb_ = std::move(cb); }
 
 void request_impl::stream(class stream *s) { strm_ = s; }
 
 void request_impl::call_on_data(const uint8_t *data, std::size_t len) {
+  printf("asio: request_impl::call_on_data\n");
   if (on_data_cb_) {
     on_data_cb_(data, len);
   }
