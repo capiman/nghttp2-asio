@@ -292,6 +292,7 @@ int http2_handler::start() {
   nghttp2_session_callbacks *callbacks;
   rv = nghttp2_session_callbacks_new(&callbacks);
   if (rv != 0) {
+    printf("asio: http2_handler::start Pos 1\n");
     return -1;
   }
 
@@ -312,13 +313,20 @@ int http2_handler::start() {
   nghttp2_session_callbacks_set_on_frame_not_send_callback(
       callbacks, on_frame_not_send_callback);
 
+  printf("asio: http2_handler::start Pos 2\n");
+
   rv = nghttp2_session_server_new(&session_, callbacks, this);
   if (rv != 0) {
+    printf("asio: http2_handler::start Pos 3\n");
     return -1;
   }
 
+  printf("asio: http2_handler::start Pos 4\n");
+
   nghttp2_settings_entry ent{NGHTTP2_SETTINGS_MAX_CONCURRENT_STREAMS, 100};
   nghttp2_submit_settings(session_, NGHTTP2_FLAG_NONE, &ent, 1);
+
+  printf("asio: http2_handler::start Pos 5\n");
 
   return 0;
 }
