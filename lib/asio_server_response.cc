@@ -34,11 +34,12 @@ namespace nghttp2 {
 namespace asio_http2 {
 namespace server {
 
-response::response() : impl_(std::make_unique<response_impl>()) {}
+response::response() : impl_(std::make_unique<response_impl>()) { printf("asio: response::response\n"); }
 
-response::~response() {}
+response::~response() { printf("asio: response::~response\n"); }
 
 void response::write_head(unsigned int status_code, header_map h) const {
+  printf("asio: response::write_head\n");
   impl_->write_head(status_code, std::move(h));
 }
 
@@ -47,16 +48,18 @@ void response::end(std::string data) const { impl_->end(std::move(data)); }
 void response::end(generator_cb cb) const { impl_->end(std::move(cb)); }
 
 void response::write_trailer(header_map h) const {
+  printf("asio: response::write_trailer\n");
   impl_->write_trailer(std::move(h));
 }
 
-void response::on_close(close_cb cb) const { impl_->on_close(std::move(cb)); }
+void response::on_close(close_cb cb) const { printf("asio: response::on_close\n"); impl_->on_close(std::move(cb)); }
 
-void response::cancel(uint32_t error_code) const { impl_->cancel(error_code); }
+void response::cancel(uint32_t error_code) const { printf("asio: response::cancel\n"); impl_->cancel(error_code); }
 
 const response *response::push(boost::system::error_code &ec,
                                std::string method, std::string path,
                                header_map h) const {
+  printf("asio: response::push\n");
   return impl_->push(ec, std::move(method), std::move(path), std::move(h));
 }
 
