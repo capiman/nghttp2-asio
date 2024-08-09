@@ -38,6 +38,7 @@ namespace server {
 #ifndef OPENSSL_NO_NEXTPROTONEG
 namespace {
 std::vector<unsigned char> &get_alpn_token() {
+  printf("asio: get_alpn_token\n"); 
   static auto alpn_token = util::get_default_alpn();
   return alpn_token;
 }
@@ -49,6 +50,7 @@ namespace {
 int alpn_select_proto_cb(SSL *ssl, const unsigned char **out,
                          unsigned char *outlen, const unsigned char *in,
                          unsigned int inlen, void *arg) {
+  printf("asio: alpn_select_proto_cb\n"); 
   if (!util::select_h2(out, outlen, in, inlen)) {
     return SSL_TLSEXT_ERR_NOACK;
   }
@@ -60,6 +62,8 @@ int alpn_select_proto_cb(SSL *ssl, const unsigned char **out,
 boost::system::error_code
 configure_tls_context_easy(boost::system::error_code &ec,
                            boost::asio::ssl::context &tls_context) {
+  printf("asio: configure_tls_context_easy\n"); 
+  
   ec.clear();
 
   auto ctx = tls_context.native_handle();
