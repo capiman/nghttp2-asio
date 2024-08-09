@@ -35,6 +35,9 @@ namespace {
 std::string create_html(int status_code) {
   BlockAllocator balloc(1024, 1024);
   std::string res;
+
+  printf("asio: create_html\n");
+  
   res.reserve(512);
   auto status_string = ::nghttp2::http2::stringify_status(balloc, status_code);
   auto reason_phrase = ::nghttp2::http2::get_reason_phrase(status_code);
@@ -52,6 +55,7 @@ std::string create_html(int status_code) {
 } // namespace
 
 request_cb redirect_handler(int status_code, std::string uri) {
+  printf("asio: redirect_handler\n");
   return [status_code, uri](const request &req, const response &res) {
     header_map h;
     h.emplace("location", header_value{std::move(uri)});
@@ -67,6 +71,7 @@ request_cb redirect_handler(int status_code, std::string uri) {
 }
 
 request_cb status_handler(int status_code) {
+  printf("asio: status_handler\n");
   return [status_code](const request &req, const response &res) {
     if (!::nghttp2::http2::expect_response_body(status_code)) {
       res.write_head(status_code);
