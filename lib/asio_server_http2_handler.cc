@@ -54,6 +54,8 @@ int on_begin_headers_callback(nghttp2_session *session,
                               const nghttp2_frame *frame, void *user_data) {
   auto handler = static_cast<http2_handler *>(user_data);
 
+  printf("asio: on_begin_headers_callback\n");
+
   if (frame->hd.type != NGHTTP2_HEADERS ||
       frame->headers.cat != NGHTTP2_HCAT_REQUEST) {
     return 0;
@@ -72,6 +74,8 @@ int on_header_callback(nghttp2_session *session, const nghttp2_frame *frame,
                        void *user_data) {
   auto handler = static_cast<http2_handler *>(user_data);
   auto stream_id = frame->hd.stream_id;
+
+  printf("asio: on_header_callback\n");
 
   if (frame->hd.type != NGHTTP2_HEADERS ||
       frame->headers.cat != NGHTTP2_HCAT_REQUEST) {
@@ -127,6 +131,8 @@ int on_frame_recv_callback(nghttp2_session *session, const nghttp2_frame *frame,
   auto handler = static_cast<http2_handler *>(user_data);
   auto strm = handler->find_stream(frame->hd.stream_id);
 
+  printf("asio: on_frame_recv_callback\n");
+
   switch (frame->hd.type) {
   case NGHTTP2_DATA:
     if (!strm) {
@@ -167,6 +173,8 @@ int on_data_chunk_recv_callback(nghttp2_session *session, uint8_t flags,
   auto handler = static_cast<http2_handler *>(user_data);
   auto strm = handler->find_stream(stream_id);
 
+  printf("asio: on_data_chunk_recv_callback\n");
+
   if (!strm) {
     return 0;
   }
@@ -182,6 +190,8 @@ namespace {
 int on_stream_close_callback(nghttp2_session *session, int32_t stream_id,
                              uint32_t error_code, void *user_data) {
   auto handler = static_cast<http2_handler *>(user_data);
+
+  printf("asio: on_stream_close_callback\n");
 
   auto strm = handler->find_stream(stream_id);
   if (!strm) {
@@ -200,6 +210,8 @@ namespace {
 int on_frame_send_callback(nghttp2_session *session, const nghttp2_frame *frame,
                            void *user_data) {
   auto handler = static_cast<http2_handler *>(user_data);
+
+  printf("asio: on_frame_send_callback\n");
 
   if (frame->hd.type != NGHTTP2_PUSH_PROMISE) {
     return 0;
@@ -222,6 +234,9 @@ namespace {
 int on_frame_not_send_callback(nghttp2_session *session,
                                const nghttp2_frame *frame, int lib_error_code,
                                void *user_data) {
+
+  printf("asio: on_frame_not_send_callback\n");
+  
   if (frame->hd.type != NGHTTP2_HEADERS) {
     return 0;
   }
@@ -247,9 +262,10 @@ http2_handler::http2_handler(boost::asio::io_service &io_service,
       inside_callback_(false),
       write_signaled_(false),
       tstamp_cached_(time(nullptr)),
-      formatted_date_(util::http_date(tstamp_cached_)) {}
+      formatted_date_(util::http_date(tstamp_cached_)) { printf("asio: http2_handler::http2_handler\n"); }
 
 http2_handler::~http2_handler() {
+  printf("asio: http2_handler::~http2_handler\n");
   for (auto &p : streams_) {
     auto &strm = p.second;
     strm->response().impl().call_on_close(NGHTTP2_INTERNAL_ERROR);
@@ -259,6 +275,7 @@ http2_handler::~http2_handler() {
 }
 
 const std::string &http2_handler::http_date() {
+  printf("asio: http2_handler::http_date\n");
   auto t = time(nullptr);
   if (t != tstamp_cached_) {
     tstamp_cached_ = t;
@@ -269,6 +286,8 @@ const std::string &http2_handler::http_date() {
 
 int http2_handler::start() {
   int rv;
+
+  printf("asio: http2_handler::start\n");
 
   nghttp2_session_callbacks *callbacks;
   rv = nghttp2_session_callbacks_new(&callbacks);
@@ -305,6 +324,7 @@ int http2_handler::start() {
 }
 
 stream *http2_handler::create_stream(int32_t stream_id) {
+  printf("asio: http2_handler::create_stream\n");
   auto p =
       streams_.emplace(stream_id, std::make_unique<stream>(this, stream_id));
   assert(p.second);
@@ -312,10 +332,12 @@ stream *http2_handler::create_stream(int32_t stream_id) {
 }
 
 void http2_handler::close_stream(int32_t stream_id) {
+  printf("asio: http2_handler::close_stream\n");
   streams_.erase(stream_id);
 }
 
 stream *http2_handler::find_stream(int32_t stream_id) {
+  printf("asio: http2_handler::find_stream\n");
   auto i = streams_.find(stream_id);
   if (i == std::end(streams_)) {
     return nullptr;
@@ -325,6 +347,7 @@ stream *http2_handler::find_stream(int32_t stream_id) {
 }
 
 void http2_handler::call_on_request(stream &strm) {
+  printf("asio: http2_handler::call_on_request\n");
   auto cb = mux_.handler(strm.request().impl());
   cb(strm.request(), strm.response());
 }
@@ -336,6 +359,8 @@ bool http2_handler::should_stop() const {
 
 int http2_handler::start_response(stream &strm) {
   int rv;
+
+  printf("asio: http2_handler::start_response\n");
 
   auto &res = strm.response().impl();
   auto &header = res.header();
@@ -377,6 +402,9 @@ int http2_handler::start_response(stream &strm) {
 
 int http2_handler::submit_trailer(stream &strm, header_map h) {
   int rv;
+
+  printf("asio: http2_handler::submit_trailer\n");
+  
   auto nva = std::vector<nghttp2_nv>();
   nva.reserve(h.size());
   for (auto &hd : h) {
@@ -407,11 +435,13 @@ void http2_handler::leave_callback() {
 }
 
 void http2_handler::stream_error(int32_t stream_id, uint32_t error_code) {
+  printf("asio: http2_handler::stream_error\n");
   ::nghttp2::asio_http2::server::stream_error(session_, stream_id, error_code);
   signal_write();
 }
 
 void http2_handler::signal_write() {
+  printf("asio: http2_handler::signal_write\n");
   if (!inside_callback_ && !write_signaled_) {
     write_signaled_ = true;
     auto self = shared_from_this();
@@ -420,11 +450,13 @@ void http2_handler::signal_write() {
 }
 
 void http2_handler::initiate_write() {
+  printf("asio: http2_handler::initiate_write\n");
   write_signaled_ = false;
   writefun_();
 }
 
 void http2_handler::resume(stream &strm) {
+  printf("asio: http2_handler::resume\n");
   nghttp2_session_resume_data(session_, strm.get_stream_id());
   signal_write();
 }
@@ -434,6 +466,8 @@ response *http2_handler::push_promise(boost::system::error_code &ec,
                                       std::string raw_path_query,
                                       header_map h) {
   int rv;
+
+  printf("asio: http2_handler::push_promise\n");
 
   ec.clear();
 
