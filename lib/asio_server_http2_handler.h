@@ -100,11 +100,16 @@ public:
 
     int rv;
 
+    printf("on_read\n");
+
     rv = nghttp2_session_mem_recv(session_, buffer.data(), len);
 
     if (rv < 0) {
+      printf("on_read rv=%d\n", rv);
       return -1;
     }
+
+    printf("on_read Pos 1\n");
 
     return 0;
   }
