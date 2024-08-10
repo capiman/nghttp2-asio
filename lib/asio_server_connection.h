@@ -101,18 +101,21 @@ public:
   socket_type &socket() { return socket_; }
 
   void start_tls_handshake_deadline() {
+    printf("start_tls_handshake_deadline\n");
     deadline_.expires_from_now(tls_handshake_timeout_);
     deadline_.async_wait(
         std::bind(&connection::handle_deadline, this->shared_from_this()));
   }
 
   void start_read_deadline() {
+    printf("start_read_deadline\n");
     deadline_.expires_from_now(read_timeout_);
     deadline_.async_wait(
         std::bind(&connection::handle_deadline, this->shared_from_this()));
   }
 
   void handle_deadline() {
+    printf("handle_deadline\n");
     if (stopped_) {
       return;
     }
@@ -129,6 +132,7 @@ public:
   }
 
   void do_read() {
+    printf("do_read\n");
     auto self = this->shared_from_this();
 
     deadline_.expires_from_now(read_timeout_);
@@ -137,22 +141,34 @@ public:
         boost::asio::buffer(buffer_),
         [this, self](const boost::system::error_code &e,
                      std::size_t bytes_transferred) {
+          printf("do_read Pos 2\n");
           if (e) {
+            printf("do_read Pos 3\n");
             stop();
             return;
           }
 
+          printf("do_read Pos 4\n");
+
           if (handler_->on_read(buffer_, bytes_transferred) != 0) {
+            printf("do_read Pos 5\n");
             stop();
             return;
           }
+
+          printf("do_read Pos 5\n");
 
           do_write();
 
+          printf("do_read Pos 6\n");
+
           if (!writing_ && handler_->should_stop()) {
+            printf("do_read Pos 7\n");
             stop();
             return;
           }
+
+          printf("do_read Pos 8\n");
 
           do_read();
 
@@ -165,9 +181,11 @@ public:
   }
 
   void do_write() {
+    printf("do_write\n");
     auto self = this->shared_from_this();
 
     if (writing_) {
+      printf("do_write Pos 1\n");
       return;
     }
 
@@ -176,23 +194,34 @@ public:
 
     rv = handler_->on_write(outbuf_, nwrite);
 
+    printf("do_write Pos 2\n");
+
     if (rv != 0) {
+      printf("do_write Pos 3\n");
       stop();
       return;
     }
 
+    printf("do_write Pos 4\n");
+
     if (nwrite == 0) {
+      printf("do_write Pos 5\n");
       if (handler_->should_stop()) {
+        printf("do_write Pos 6\n");
         stop();
       }
       return;
     }
+
+    printf("do_write Pos 7\n");
 
     writing_ = true;
 
     // Reset read deadline here, because normally client is sending
     // something, it does not expect timeout while doing it.
     deadline_.expires_from_now(read_timeout_);
+
+    printf("do_write Pos 8\n");
 
     boost::asio::async_write(
         socket_, boost::asio::buffer(outbuf_, nwrite),
@@ -207,6 +236,8 @@ public:
           do_write();
         });
 
+    printf("do_write Pos 9\n");
+
     // No new asynchronous operations are started. This means that all
     // shared_ptr references to the connection object will disappear and
     // the object will be destroyed automatically after this handler
@@ -214,9 +245,12 @@ public:
   }
 
   void stop() {
+    printf("do_stop\n");
     if (stopped_) {
       return;
     }
+
+    printf("do_stop Pos 1\n");
 
     stopped_ = true;
     boost::system::error_code ignored_ec;
